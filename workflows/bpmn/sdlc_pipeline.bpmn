@@ -9,6 +9,9 @@
              expressionLanguage="http://www.w3.org/1999/XPath"
              targetNamespace="http://uipath.com/agenthack/sdlc">
 
+  <!-- Message must be a direct child of definitions, not process (BPMN 2.0 §10.4.3) -->
+  <message id="prOpenedMessage" name="GitHubPROpened"/>
+
   <process id="AgenticSDLCPipeline" name="Agentic SDLC Pipeline" isExecutable="true">
 
     <!-- ── Start: GitHub PR opened ── -->
@@ -93,9 +96,6 @@
     <endEvent id="endRolledBack" name="Deploy Rolled Back"/>
 
     <endEvent id="endSuccess" name="Deploy Successful&#10;Pipeline Complete"/>
-
-    <!-- ── Message definition ── -->
-    <message id="prOpenedMessage" name="GitHubPROpened"/>
 
     <!-- ── Sequence flows ── -->
     <sequenceFlow id="f1"  sourceRef="start"          targetRef="claudeReview"/>
