@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:activiti="http://activiti.org/bpmn"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+             typeLanguage="http://www.w3.org/2001/XMLSchema"
+             expressionLanguage="http://www.w3.org/1999/XPath"
+             targetNamespace="http://uipath.com/agenthack/sdlc">
+
+  <process id="AgenticSDLCPipeline" name="Agentic SDLC Pipeline" isExecutable="true">
+
+    <!-- ── Start: GitHub PR opened ── -->
+    <startEvent id="start" name="PR Opened (GitHub Webhook)">
+      <messageEventDefinition messageRef="prOpenedMessage"/>
+    </startEvent>
+
+    <!-- ── Step 1: Claude Code Review ── -->
+    <serviceTask id="claudeReview" name="Claude Code Review&#10;(Agent Builder)" activiti:type="external"
+                 activiti:topic="claude_review">
+      <documentation>
+        Calls the Claude Code reviewer agent with the PR diff.
+        Returns: { approved, confidence, blocking_issues, suggestions, summary }
+      </documentation>
+    </serviceTask>
+
+    <!-- ── Step 2: UiPath Test Cloud ── -->
+    <serviceTask id="testCloud" name="UiPath Test Cloud&#10;Run Test Suite" activiti:type="external"
+                 activiti:topic="trigger_test_run">
+      <documentation>
+        Triggers test execution against the PR branch via UiPath Test Cloud API.
+        Returns: { passed, test_run_id, failed_tests }
+      </documentation>
+    </serviceTask>
+
+    <!-- ── Gateway: Both checks pass? ── -->
+    <exclusiveGateway id="bothPass" name="Review + Tests Pass?" default="toHumanGate"/>
+
+    <!-- ── Happy path: Auto-merge to staging ── -->
+    <serviceTask id="autoMerge" name="Auto-merge to Staging&#10;(GitHub API)" activiti:type="external"
+                 activiti:topic="github_merge">
+      <documentation>Merges the PR to staging branch via GitHub API.</documentation>
+    </serviceTask>
+
+    <!-- ── Human review gate (unhappy path) ── -->
+    <userTask id="humanReview" name="Human Review Gate&#10;(Tech Lead)" activiti:candidateGroups="tech-leads">
+      <documentation>
+        Tech lead reviews Claude findings and test failures.
+        Approves or rejects the PR for production.
+      </documentation>
+    </userTask>
+
+    <!-- ── Gateway: Human approved? ── -->
+    <exclusiveGateway id="humanDecision" name="Tech Lead Approved?" default="rejectPR"/>
+
+    <!-- ── Reject: close PR with comment ── -->
+    <serviceTask id="rejectPR" name="Reject PR&#10;Post GitHub Comment" activiti:type="external"
+                 activiti:topic="github_reject">
+    </serviceTask>
+
+    <endEvent id="endRejected" name="PR Rejected"/>
+
+    <!-- ── Merge join before prod deploy ── -->
+    <exclusiveGateway id="mergeJoin" name="Proceed to Deploy"/>
+
+    <!-- ── Step 3: Production Deploy ── -->
+    <serviceTask id="prodDeploy" name="Trigger Production Deploy&#10;(GitHub Actions)" activiti:type="external"
+                 activiti:topic="github_deploy">
+      <documentation>Dispatches the production workflow via GitHub Actions API.</documentation>
+    </serviceTask>
+
+    <!-- ── Step 4: Post-deploy monitoring ── -->
+    <serviceTask id="monitor" name="Post-deploy Monitoring&#10;(Agent Builder)" activiti:type="external"
+                 activiti:topic="monitoring_agent">
+      <documentation>
+        Monitors health endpoints for regressions after deploy.
+        Polls for up to 10 minutes. Signals rollback if consecutive failures detected.
+      </documentation>
+    </serviceTask>
+
+    <!-- ── Gateway: Regression detected? ── -->
+    <exclusiveGateway id="regressionCheck" name="Regression Detected?" default="deploySuccess"/>
+
+    <!-- ── Rollback BPMN sub-process trigger ── -->
+    <callActivity id="triggerRollback" name="Trigger Rollback&#10;BPMN Case" calledElement="RollbackBPMN">
+      <extensionElements>
+        <activiti:in source="deployId" target="deployId"/>
+        <activiti:in source="failureReason" target="reason"/>
+      </extensionElements>
+    </callActivity>
+
+    <endEvent id="endRolledBack" name="Deploy Rolled Back"/>
+
+    <endEvent id="endSuccess" name="Deploy Successful&#10;Pipeline Complete"/>
+
+    <!-- ── Message definition ── -->
+    <message id="prOpenedMessage" name="GitHubPROpened"/>
+
+    <!-- ── Sequence flows ── -->
+    <sequenceFlow id="f1"  sourceRef="start"          targetRef="claudeReview"/>
+    <sequenceFlow id="f2"  sourceRef="claudeReview"    targetRef="testCloud"/>
+    <sequenceFlow id="f3"  sourceRef="testCloud"       targetRef="bothPass"/>
+
+    <!-- both pass → auto-merge -->
+    <sequenceFlow id="f4"  sourceRef="bothPass"        targetRef="autoMerge" name="Both Pass">
+      <conditionExpression xsi:type="tFormalExpression">
+        ${reviewApproved == true and testsPass == true}
+      </conditionExpression>
+    </sequenceFlow>
+
+    <!-- either fails → human gate -->
+    <sequenceFlow id="f5"  sourceRef="bothPass"        targetRef="humanReview"   name="Needs Human Review"/>
+
+    <!-- human decision -->
+    <sequenceFlow id="f6"  sourceRef="humanReview"     targetRef="humanDecision"/>
+    <sequenceFlow id="f7"  sourceRef="humanDecision"   targetRef="mergeJoin"     name="Approved">
+      <conditionExpression xsi:type="tFormalExpression">${humanApproved == true}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="f8"  sourceRef="humanDecision"   targetRef="rejectPR"      name="Rejected"/>
+    <sequenceFlow id="f9"  sourceRef="rejectPR"        targetRef="endRejected"/>
+
+    <!-- auto-merge joins with approved human -->
+    <sequenceFlow id="f10" sourceRef="autoMerge"       targetRef="mergeJoin"/>
+    <sequenceFlow id="f11" sourceRef="mergeJoin"       targetRef="prodDeploy"/>
+    <sequenceFlow id="f12" sourceRef="prodDeploy"       targetRef="monitor"/>
+    <sequenceFlow id="f13" sourceRef="monitor"          targetRef="regressionCheck"/>
+
+    <!-- regression → rollback -->
+    <sequenceFlow id="f14" sourceRef="regressionCheck" targetRef="triggerRollback" name="Regression Detected">
+      <conditionExpression xsi:type="tFormalExpression">${regressionDetected == true}</conditionExpression>
+    </sequenceFlow>
+
+    <!-- no regression → success -->
+    <sequenceFlow id="f15" sourceRef="regressionCheck" targetRef="endSuccess"    name="All Healthy"/>
+    <sequenceFlow id="f16" sourceRef="triggerRollback"  targetRef="endRolledBack"/>
+
+  </process>
+
+  <!-- ── BPMN Diagram / visual layout ── -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_sdlc">
+    <bpmndi:BPMNPlane id="BPMNPlane_sdlc" bpmnElement="AgenticSDLCPipeline">
+
+      <bpmndi:BPMNShape id="shape_start"         bpmnElement="start">
+        <omgdc:Bounds x="60"  y="200" width="36"  height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_claudeReview"  bpmnElement="claudeReview">
+        <omgdc:Bounds x="140" y="178" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_testCloud"     bpmnElement="testCloud">
+        <omgdc:Bounds x="300" y="178" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_bothPass"      bpmnElement="bothPass" isMarkerVisible="true">
+        <omgdc:Bounds x="460" y="193" width="50"  height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_autoMerge"     bpmnElement="autoMerge">
+        <omgdc:Bounds x="560" y="98"  width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_humanReview"   bpmnElement="humanReview">
+        <omgdc:Bounds x="560" y="278" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_humanDecision" bpmnElement="humanDecision" isMarkerVisible="true">
+        <omgdc:Bounds x="730" y="293" width="50"  height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_rejectPR"      bpmnElement="rejectPR">
+        <omgdc:Bounds x="840" y="358" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_endRejected"   bpmnElement="endRejected">
+        <omgdc:Bounds x="1010" y="378" width="36"  height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_mergeJoin"     bpmnElement="mergeJoin" isMarkerVisible="true">
+        <omgdc:Bounds x="740" y="113" width="50"  height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_prodDeploy"    bpmnElement="prodDeploy">
+        <omgdc:Bounds x="840" y="98"  width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_monitor"       bpmnElement="monitor">
+        <omgdc:Bounds x="1010" y="98" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_regressionCheck" bpmnElement="regressionCheck" isMarkerVisible="true">
+        <omgdc:Bounds x="1180" y="113" width="50"  height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_triggerRollback" bpmnElement="triggerRollback">
+        <omgdc:Bounds x="1280" y="178" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_endRolledBack"  bpmnElement="endRolledBack">
+        <omgdc:Bounds x="1460" y="198" width="36"  height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_endSuccess"    bpmnElement="endSuccess">
+        <omgdc:Bounds x="1280" y="98"  width="36"  height="36"/>
+      </bpmndi:BPMNShape>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</definitions>
