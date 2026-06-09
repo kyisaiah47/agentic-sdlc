@@ -11,7 +11,7 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![GitHub](https://img.shields.io/badge/GitHub-Webhooks-181717?style=for-the-badge&logo=github&logoColor=white)
 
-*UiPath Agent Hackathon 2026 — Track 2: UiPath Maestro BPMN*
+*UiPath Agent Hackathon 2026 — Track 2: UiPath Maestro BPMN · Built with UiPath Studio Web*
 
 </div>
 
