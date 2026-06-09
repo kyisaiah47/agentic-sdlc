@@ -206,6 +206,12 @@ Claude Code sessions were used continuously from initial scaffolding through fin
 
 ---
 
+## Presentation Deck
+
+[View the submission deck →](https://docs.google.com/presentation/d/1v8XQBxn0L4bH1Try-CgNg7esFZxQk-cL/edit?usp=sharing)
+
+---
+
 ## License
 
 MIT
