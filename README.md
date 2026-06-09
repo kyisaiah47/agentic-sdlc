@@ -1,72 +1,42 @@
-# Agentic SDLC Pipeline — UiPath AgentHack 2026
+<div align="center">
 
-**Track**: UiPath Maestro BPMN (Track 2)
+<!-- BANNER_PLACEHOLDER -->
 
-An agentic software delivery pipeline that uses Claude Code for AI-powered code review, UiPath Test Cloud for automated testing, and UiPath Maestro BPMN to orchestrate the full flow from PR to production — with human approval gates at critical decision points.
+# 🤖 Agentic SDLC Pipeline
 
-## What it does
+**From PR to production — reviewed, tested, and deployed by AI agents.**
 
-```
-GitHub PR opened
-       ↓
-UiPath API Workflow (GitHub webhook receiver)
-       ↓
-Maestro BPMN process starts
-       ↓
-[Step 1] Claude Code Agent — reviews PR diff (quality, security, logic)
-       ↓
-[Step 2] UiPath Test Cloud — runs test suite against PR branch
-       ↓
-[Gateway] Both pass?
-   ├─ Yes → auto-merge to staging, notify team
-   └─ No  → Human review gate (tech lead approves/rejects in Maestro)
-       ↓
-[Step 3] Human approval gate → production deploy
-       ↓
-[Step 4] Deploy via GitHub Actions API
-       ↓
-[Step 5] Monitoring agent — watches for post-deploy regressions
-       └─ If regression detected → trigger rollback BPMN case
-```
+![UiPath](https://img.shields.io/badge/UiPath-Maestro%20BPMN-FF6D01?style=for-the-badge&logo=uipath&logoColor=white)
+![Claude](https://img.shields.io/badge/Claude-Code%20Agent-7B5EA7?style=for-the-badge&logo=anthropic&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-Webhooks-181717?style=for-the-badge&logo=github&logoColor=white)
 
-## UiPath Components Used
+*UiPath Agent Hackathon 2026 — Track 2: UiPath Maestro BPMN*
 
-| Component | Role |
-|-----------|------|
-| Maestro BPMN | Orchestrates the full SDLC flow |
-| Agent Builder | Claude Code reviewer agent, monitoring agent |
-| API Workflows | GitHub webhook receiver, GitHub API calls, deploy trigger |
-| Test Cloud | Automated test execution on PR branch |
-| UiPath for Coding Agents (Claude Code) | Used to build this solution + embedded in review step |
+</div>
 
-## External Integrations
+<br/>
 
-- **GitHub** — PR events (webhook), merge API, Actions trigger
-- **Anthropic Claude API** — code review agent
-- **Slack** (optional) — human-in-the-loop notifications
+An end-to-end agentic software delivery pipeline that automates the entire path from pull request to production deployment. When a PR is opened, a Claude Code agent reviews the diff for quality, security, and logic issues; UiPath Test Cloud runs the automated test suite against the branch; and UiPath Maestro BPMN orchestrates the full flow — including a human-in-the-loop approval gate before any production deploy. If a post-deploy regression is detected, a monitoring agent automatically triggers a rollback.
 
-## Project Structure
+## ✨ Features
 
-```
-agents/
-  claude_reviewer.py      # Claude API code review agent
-  monitoring_agent.py     # Post-deploy regression monitor
-webhooks/
-  github_handler.py       # GitHub webhook receiver → triggers BPMN
-workflows/
-  bpmn/                   # Maestro BPMN diagram exports
-scripts/
-  trigger_test_run.py     # UiPath Test Cloud API trigger
-  deploy.py               # GitHub Actions deployment trigger
-demo/
-  sample_repo/            # Sample codebase used in demo
-```
+- **AI-Powered Code Review** — Claude Code agent analyzes every PR diff for security issues, logic errors, and code quality
+- **Automated Test Execution** — UiPath Test Cloud runs the full test suite against the PR branch before any merge
+- **BPMN Orchestration** — Maestro BPMN manages the entire SDLC flow with clear decision gateways and audit trails
+- **Human Approval Gates** — Tech leads review and approve/reject directly inside Maestro at critical checkpoints
+- **Automated Production Deploy** — Approved changes trigger GitHub Actions for deployment without manual intervention
+- **Regression Monitoring & Rollback** — A post-deploy monitoring agent watches for regressions and initiates a rollback BPMN case automatically
 
-## Setup
+## 🛠️ Tech Stack
+
+UiPath Maestro BPMN · UiPath Agent Builder · UiPath Test Cloud · UiPath API Workflows · Anthropic Claude API · GitHub Webhooks & Actions · Python 3.10+ · Slack (optional notifications)
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- UiPath Automation Cloud account (UiPath Labs)
+- UiPath Automation Cloud account
 - Anthropic API key
 - GitHub repo with webhook configured
 - Python 3.10+
@@ -88,12 +58,14 @@ UIPATH_TENANT=...
 UIPATH_ORG=...
 ```
 
-### Run the webhook handler locally
+### Run the Webhook Handler
 
 ```bash
 python webhooks/github_handler.py
 ```
 
-## License
+This starts the GitHub webhook receiver locally. Configure your repo's webhook to point at this handler — it will trigger the Maestro BPMN process automatically on each new PR.
+
+## 📄 License
 
 MIT
