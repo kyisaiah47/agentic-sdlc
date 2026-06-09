@@ -98,8 +98,8 @@ Both agents are invoked as external service task steps inside the Maestro BPMN p
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/kyisaiah47/agentic-sdlc.git
-cd agentic-sdlc
+git clone https://github.com/kyisaiah47/uipath-agenthack.git
+cd uipath-agenthack
 ```
 
 ### 2. Install dependencies
@@ -187,6 +187,22 @@ scripts/
 demo/
   sample_repo/              # Sample codebase used in demo reviews
 ```
+
+---
+
+## Built with Claude Code
+
+[Claude Code](https://claude.ai/code) by Anthropic was the primary development tool used throughout this project.
+
+**How it contributed:**
+
+- **Agent scaffolding** — Claude Code generated the initial structure and logic for both coded agents (`agents/claude_reviewer.py` and `agents/monitoring_agent.py`), including the Anthropic API call patterns, prompt construction, and structured JSON response handling.
+- **BPMN workflow generation** — Claude Code authored the Maestro BPMN XML (`workflows/bpmn/sdlc_pipeline.bpmn`), including the sequence flows, exclusive gateways, service task definitions, and human task configuration for the approval gate.
+- **UiPath API integration** — Claude Code wrote the UiPath Automation Cloud API integration code used in `scripts/trigger_test_run.py` and `scripts/deploy.py`, including OAuth token exchange, process trigger payloads, and polling logic.
+- **Webhook handler** — Claude Code produced the Vercel serverless webhook handler (`api/webhook.py`) and the local development server (`webhooks/github_handler.py`), including HMAC signature verification and diff extraction.
+- **Test harness** — Claude Code wrote `scripts/test_reviewer.py` and the sample vulnerable codebase in `demo/sample_repo/` used to validate the reviewer agent output.
+
+Claude Code sessions were used continuously from initial scaffolding through final integration. The commit history and overall code structure reflect Claude Code's scaffolding approach throughout.
 
 ---
 
