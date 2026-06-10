@@ -19,6 +19,46 @@ def verify_signature(payload: bytes, signature: str) -> bool:
     return hmac.compare_digest(expected, signature)
 
 
+def post_pr_comment(repo_full_name: str, pr_number: int, review: dict) -> None:
+    token = os.environ["GITHUB_TOKEN"]
+    approved = review.get("approved", False)
+    confidence = int(review.get("confidence", 0) * 100)
+    summary = review.get("summary", "")
+    issues = review.get("blocking_issues", [])
+
+    status = "APPROVED" if approved else "CHANGES REQUESTED"
+    emoji = "✅" if approved else "❌"
+
+    lines = [
+        f"## {emoji} Claude AI Code Review — {status}",
+        f"**Confidence:** {confidence}%",
+        f"**Summary:** {summary}",
+    ]
+    if issues:
+        lines.append("\n### Blocking Issues")
+        for issue in issues:
+            sev = issue.get("severity", "").upper()
+            desc = issue.get("description", "")
+            line = issue.get("line")
+            loc = f" (line {line})" if line else ""
+            lines.append(f"- **[{sev}]{loc}** {desc}")
+
+    suggestions = review.get("suggestions", [])
+    if suggestions:
+        lines.append("\n### Suggestions")
+        for s in suggestions:
+            lines.append(f"- {s.get('description', '')}")
+
+    lines.append("\n---\n*Reviewed by Claude via UiPath Maestro BPMN pipeline*")
+
+    requests.post(
+        f"https://api.github.com/repos/{repo_full_name}/issues/{pr_number}/comments",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        json={"body": "\n".join(lines)},
+        timeout=15,
+    )
+
+
 def fetch_pr_diff(repo_full_name: str, pr_number: int) -> str:
     token = os.environ["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}"
@@ -110,6 +150,15 @@ class handler(BaseHTTPRequestHandler):
             "author": pr["user"]["login"],
             "diff": diff,
         }
+
+        try:
+            import sys, os as _os
+            sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
+            from agents.claude_reviewer import review_pr
+            review = review_pr(diff, pr["title"], pr.get("body", "") or "")
+            post_pr_comment(repo["full_name"], pr["number"], review)
+        except Exception as e:
+            pass  # don't block BPMN trigger if review fails
 
         try:
             result = trigger_bpmn(bpmn_payload)
