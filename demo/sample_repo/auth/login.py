@@ -20,3 +20,7 @@ def delete_user(user_id: int, requesting_user_id: int) -> bool:
         return False
     db.execute("DELETE FROM users WHERE id = ?", (user_id,))
     return True
+
+def get_user_profile(user_id: int) -> dict:
+    row = db.query("SELECT id, username, email FROM users WHERE id = ?", (user_id,))
+    return {"id": row.id, "username": row.username, "email": row.email} if row else {}
