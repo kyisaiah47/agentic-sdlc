@@ -36,8 +36,19 @@ def trigger_bpmn(payload: dict):
     headers = {
         "Authorization": f"Bearer {UIPATH_API_KEY}",
         "Content-Type": "application/json",
+        "X-UIPATH-OrganizationUnitId": os.environ.get("UIPATH_FOLDER_ID", "3068514"),
     }
-    r = requests.post(UIPATH_WEBHOOK_URL, headers=headers, json=payload)
+    orchestrator_payload = {
+        "startInfo": {
+            "ReleaseKey": os.environ.get("UIPATH_RELEASE_KEY", "a08beeb0-b907-4ecf-8737-f095b45145a5"),
+            "Strategy": "Unattended",
+            "RobotIds": [],
+            "NoOfRobots": 0,
+            "Source": "Manual",
+            "InputArguments": json.dumps(payload),
+        }
+    }
+    r = requests.post(UIPATH_WEBHOOK_URL, headers=headers, json=orchestrator_payload)
     r.raise_for_status()
     return r.json()
 

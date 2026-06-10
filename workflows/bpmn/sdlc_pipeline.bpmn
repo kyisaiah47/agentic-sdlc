@@ -38,7 +38,7 @@
     </serviceTask>
 
     <!-- ── Gateway: Both checks pass? ── -->
-    <exclusiveGateway id="bothPass" name="Review + Tests Pass?" default="toHumanGate"/>
+    <exclusiveGateway id="bothPass" name="Review + Tests Pass?" default="f5"/>
 
     <!-- ── Happy path: Auto-merge to staging ── -->
     <serviceTask id="autoMerge" name="Auto-merge to Staging&#10;(GitHub API)" activiti:type="external"
@@ -83,7 +83,7 @@
     </serviceTask>
 
     <!-- ── Gateway: Regression detected? ── -->
-    <exclusiveGateway id="regressionCheck" name="Regression Detected?" default="deploySuccess"/>
+    <exclusiveGateway id="regressionCheck" name="Regression Detected?" default="f15"/>
 
     <!-- ── Rollback BPMN sub-process trigger ── -->
     <callActivity id="triggerRollback" name="Trigger Rollback&#10;BPMN Case" calledElement="RollbackBPMN">

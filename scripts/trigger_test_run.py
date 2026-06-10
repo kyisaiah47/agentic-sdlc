@@ -15,14 +15,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-UIPATH_BASE = "https://cloud.uipath.com/{org}/{tenant}"
+UIPATH_BASE = "https://staging.uipath.com/{org}/{tenant}"
 POLL_INTERVAL = 15  # seconds
 MAX_WAIT = 600       # 10 minutes
 
 
 def get_token(client_id: str, client_secret: str) -> str:
     r = requests.post(
-        "https://account.uipath.com/oauth/token",
+        "https://staging.uipath.com/identity_/connect/token",
         json={
             "grant_type": "client_credentials",
             "client_id": client_id,

@@ -9,7 +9,7 @@ import json
 import time
 import requests
 
-UIPATH_API_BASE = "https://cloud.uipath.com/{org}/{tenant}/orchestrator_"
+UIPATH_API_BASE = "https://staging.uipath.com/{org}/{tenant}/orchestrator_"
 ROLLBACK_PROCESS = "RollbackBPMN"
 
 
@@ -25,7 +25,7 @@ def check_health(endpoints: list[str]) -> dict:
 
 
 def trigger_rollback(deploy_id: str, reason: str, token: str, org: str, tenant: str):
-    url = f"https://cloud.uipath.com/{org}/{tenant}/orchestrator_/api/v1/processes/start"
+    url = f"https://staging.uipath.com/{org}/{tenant}/orchestrator_/api/v1/processes/start"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = {
         "processName": ROLLBACK_PROCESS,
