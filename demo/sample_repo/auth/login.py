@@ -19,3 +19,4 @@ def reset_password(user_id: int, new_password: str) -> None:
 
 def get_user_profile(user_id: int) -> dict:
     return db.query(f"SELECT * FROM users WHERE id={user_id}")
+// live trigger test Wed Jun 10 07:32:11 EDT 2026
