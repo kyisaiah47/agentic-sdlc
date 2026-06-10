@@ -2,7 +2,7 @@
   "buildCommand": null,
   "outputDirectory": null,
   "functions": {
-    "api/*.py": {
+    "api/webhook": {
       "maxDuration": 60
     }
   }
