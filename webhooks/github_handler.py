@@ -32,18 +32,34 @@ def fetch_pr_diff(repo_full_name: str, pr_number: int, token: str) -> str:
     return r.text
 
 
+def get_uipath_token() -> str:
+    r = requests.post(
+        "https://staging.uipath.com/identity_/connect/token",
+        data={
+            "grant_type": "client_credentials",
+            "client_id": os.environ["UIPATH_CLIENT_ID"],
+            "client_secret": os.environ["UIPATH_CLIENT_SECRET"],
+            "scope": "OR.Execution OR.Jobs OR.Jobs.Write OR.Robots.Read OR.Folders.Read OR.Monitoring",
+        },
+        timeout=15,
+    )
+    r.raise_for_status()
+    return r.json()["access_token"]
+
+
 def trigger_bpmn(payload: dict):
+    token = get_uipath_token()
     headers = {
-        "Authorization": f"Bearer {UIPATH_API_KEY}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "X-UIPATH-OrganizationUnitId": os.environ.get("UIPATH_FOLDER_ID", "3068514"),
+        "X-UIPATH-OrganizationUnitId": os.environ.get("UIPATH_FOLDER_ID", "3068430"),
     }
     orchestrator_payload = {
         "startInfo": {
-            "ReleaseKey": os.environ.get("UIPATH_RELEASE_KEY", "a08beeb0-b907-4ecf-8737-f095b45145a5"),
-            "Strategy": "Unattended",
+            "ReleaseKey": os.environ.get("UIPATH_RELEASE_KEY", "fc25491b-6539-4f6d-9f35-b381fd4789f0"),
+            "Strategy": "ModernJobsCount",
             "RobotIds": [],
-            "NoOfRobots": 0,
+            "NoOfRobots": 1,
             "Source": "Manual",
             "InputArguments": json.dumps(payload),
         }
