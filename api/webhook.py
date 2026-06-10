@@ -59,6 +59,16 @@ def post_pr_comment(repo_full_name: str, pr_number: int, review: dict) -> None:
     )
 
 
+def merge_pr(repo_full_name: str, pr_number: int, sha: str) -> None:
+    token = os.environ["GITHUB_TOKEN"]
+    requests.put(
+        f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}/merge",
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"},
+        json={"commit_title": f"Auto-merged by Agentic SDLC Pipeline (Claude approved)", "sha": sha, "merge_method": "squash"},
+        timeout=15,
+    )
+
+
 def fetch_pr_diff(repo_full_name: str, pr_number: int) -> str:
     token = os.environ["GITHUB_TOKEN"]
     url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}"
@@ -151,12 +161,15 @@ class handler(BaseHTTPRequestHandler):
             "diff": diff,
         }
 
+        review = None
         try:
             import sys, os as _os
             sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
             from agents.claude_reviewer import review_pr
             review = review_pr(diff, pr["title"], pr.get("body", "") or "")
             post_pr_comment(repo["full_name"], pr["number"], review)
+            if review.get("approved"):
+                merge_pr(repo["full_name"], pr["number"], pr["head"]["sha"])
         except Exception as e:
             pass  # don't block BPMN trigger if review fails
 
