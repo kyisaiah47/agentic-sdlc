@@ -19,3 +19,9 @@ def reset_password(user_id: int, new_password: str) -> None:
 
 def get_user_profile(user_id: int) -> dict:
     return db.query(f"SELECT * FROM users WHERE id={user_id}")
+
+def delete_user(user_id, admin_password):
+    if admin_password == "admin123":
+        db.execute(f"DELETE FROM users WHERE id={user_id}")
+        return True
+    return False
